@@ -230,7 +230,7 @@ def record_tensor(x : torch.Tensor, name : str, group = None, requires_grad = Tr
     debug.append("_inspect_hidden_states", {
         "name": name,
         "group": group,
-        "requires_grad": requires_grad,
+        "requires_grad": requires_grad and x.requires_grad,
         "min": None,
         "max": None,
         "mean": None,
