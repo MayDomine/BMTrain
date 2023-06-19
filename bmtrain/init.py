@@ -13,6 +13,7 @@ def init_distributed(
         zero_level: int = 3,
         pipe_size: int = -1,
         num_micro_batches: int = None,
+        checkpointing=True,
     ):
     """Initialize distributed training.
     This function will initialize the distributed training, set the random seed and global configurations.
@@ -72,6 +73,7 @@ def init_distributed(
     config["zero_level"] = zero_level
     config["topology"] = topology(config)
     config["zero_rank"] = config["topology"].get_group_rank("zero") if pipe_size > 1 else config['rank']
+    config["checkpointing"] = checkpointing
     cpus_this_worker = None
     
     all_available_cpus = sorted(list(os.sched_getaffinity(0)))

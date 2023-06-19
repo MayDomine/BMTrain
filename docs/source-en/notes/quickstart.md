@@ -21,7 +21,7 @@ To enable ZeRO-3 optimization, you need to make some simple replacements to the 
 * `torch.nn.Module` -> `bmtrain.DistributedModule`
 * `torch.nn.Parameter` -> `bmtrain.DistributedParameter`
 
-And wrap the transformer blocks with `bmtrain.CheckpointBlock`.
+And wrap the transformer blocks with `bmtrain.ZeROBlock`.
 
 Here is an example.
 
@@ -57,9 +57,9 @@ class MyModule(bmt.DistributedModule): # changed here
         super().__init__()
         self.param = bmt.DistributedParameter(torch.empty(1024)) # changed here
         self.module_list = torch.nn.ModuleList([
-            bmt.CheckpointBlock(SomeTransformerBlock()), # changed here
-            bmt.CheckpointBlock(SomeTransformerBlock()), # changed here
-            bmt.CheckpointBlock(SomeTransformerBlock())  # changed here
+            bmt.ZeROBlock(SomeTransformerBlock()), # changed here
+            bmt.ZeROBlock(SomeTransformerBlock()), # changed here
+            bmt.ZeROBlock(SomeTransformerBlock())  # changed here
         ])
     
     def forward(self):
@@ -90,9 +90,9 @@ class MyModule(bmt.DistributedModule):
         super().__init__()
         self.param = bmt.DistributedParameter(torch.empty(1024))
         self.module_list = torch.nn.ModuleList([
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock())
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock())
         ])
     
     def forward(self):
@@ -113,9 +113,9 @@ class MyModule(bmt.DistributedModule):
         super().__init__()
         self.param = bmt.DistributedParameter(torch.empty(1024))
         self.module_list = bmt.TransformerBlockList([ # changed here
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock())
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock())
         ])
     
     def forward(self):

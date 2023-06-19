@@ -82,7 +82,7 @@ bmt.init_distributed(
 * `torch.nn.Module` -> `bmtrain.DistributedModule`
 * `torch.nn.Parameter` -> `bmtrain.DistributedParameter`
 
-并在 transformer 模块上使用 `bmtrain.CheckpointBlock`。
+并在 transformer 模块上使用 `bmtrain.ZeROBlock`。
 
 下面是一个例子：
 
@@ -118,9 +118,9 @@ class MyModule(bmt.DistributedModule): # 修改这里
         super().__init__()
         self.param = bmt.DistributedParameter(torch.empty(1024)) # 修改这里
         self.module_list = torch.nn.ModuleList([
-            bmt.CheckpointBlock(SomeTransformerBlock()), # 修改这里
-            bmt.CheckpointBlock(SomeTransformerBlock()), # 修改这里
-            bmt.CheckpointBlock(SomeTransformerBlock())  # 修改这里
+            bmt.ZeROBlock(SomeTransformerBlock()), # 修改这里
+            bmt.ZeROBlock(SomeTransformerBlock()), # 修改这里
+            bmt.ZeROBlock(SomeTransformerBlock())  # 修改这里
         ])
     
     def forward(self):
@@ -150,9 +150,9 @@ class MyModule(bmt.DistributedModule):
         super().__init__()
         self.param = bmt.DistributedParameter(torch.empty(1024))
         self.module_list = torch.nn.ModuleList([
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock())
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock())
         ])
     
     def forward(self):
@@ -173,9 +173,9 @@ class MyModule(bmt.DistributedModule):
         super().__init__()
         self.param = bmt.DistributedParameter(torch.empty(1024))
         self.module_list = bmt.TransformerBlockList([ # 修改这里
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock()),
-            bmt.CheckpointBlock(SomeTransformerBlock())
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock()),
+            bmt.ZeROBlock(SomeTransformerBlock())
         ])
     
     def forward(self):

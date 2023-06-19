@@ -10,7 +10,7 @@ class DistributedModule(torch.nn.Module):
 
     def __getattr__(self, name: str):
         ret = super().__getattr__(name)
-        # gather distributed parameters if not in CheckpointBlock
+        # gather distributed parameters if not in ZeROBlock
         if isinstance(ret, DistributedParameter) and not ret._in_checkpoint_block:
             return ret.gather()
         return ret

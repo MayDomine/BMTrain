@@ -10,7 +10,7 @@ from .global_var import config
 from . import nccl
 from .checkpointing import ScopedTensorInspectorContext
 from . import debug
-from .block_layer import CheckpointBlockContext, CheckpointBlock, round_up, _get_param_kw
+from .block_layer import ZeROContext, ZeROBlock, round_up, _get_param_kw
 
 class OpMicroForward(torch.autograd.Function):
     @staticmethod
@@ -36,7 +36,7 @@ class OpMicroForward(torch.autograd.Function):
                     cuda_rng_state.append( torch.cuda.get_rng_state() )
                     # gather parameter on load stream
                     if ctx.micro_idx == 0:
-                        block_ctx_list[idx] = CheckpointBlockContext(self._modules[str(layer_id)], ctx.layers_dict[idx], 1, pipe=True)
+                        block_ctx_list[idx] = ZeROContext(self._modules[str(layer_id)], ctx.layers_dict[idx], 1, pipe=True)
                         block_ctx_list[idx].enter()
                     # call inner module directly
                     with ScopedTensorInspectorContext() as inspector:
@@ -110,7 +110,7 @@ class OpMicroForward(torch.autograd.Function):
                         torch.cuda.set_rng_state(ctx.cuda_rng_state[idx])
                         ipt = layer_inputs[ctx.save_list[idx][1]].requires_grad_()
                         if ctx.micro_idx == 0:
-                            ctx.block_ctx_list[idx] = CheckpointBlockContext(ctx.self._modules[str(layer_id)], ctx.layers_dict[idx], 2, pipe=True)
+                            ctx.block_ctx_list[idx] = ZeROContext(ctx.self._modules[str(layer_id)], ctx.layers_dict[idx], 2, pipe=True)
                             ctx.block_ctx_list[idx].enter()
                         if ctx.micro_idx == config["micros"]-1:
                             exit_prev(prev_ctx, prev_grad)
@@ -312,7 +312,7 @@ class OpPipeTransformerBlockList(torch.autograd.Function):
 
 class PipelineTransformerBlockList(torch.nn.Module):
     r"""
-    TransformerBlockList is a list of CheckpointBlocks.
+    TransformerBlockList is a list of ZeROBlocks.
 
     This is designed to reduce the communication overhead by overlapping the computation and reduce_scatter operation during backward pass.
 
@@ -329,9 +329,9 @@ class PipelineTransformerBlockList(torch.nn.Module):
         >>> hidden_state = transformer_module_list(hidden_state, ...)
 
     """
-    _modules: Dict[str, CheckpointBlock]
+    _modules: Dict[str, ZeROBlock]
 
-    def __init__(self, modules: Iterable[CheckpointBlock]) -> None:
+    def __init__(self, modules: Iterable[ZeROBlock]) -> None:
         super().__init__()
         
         self._modules = {}
@@ -343,8 +343,8 @@ class PipelineTransformerBlockList(torch.nn.Module):
         self.stage_id = topo.stage_id
         self.pipe_idx = topo.pipe_idx 
         for idx, module in enumerate(modules):
-            if not isinstance(module, CheckpointBlock):
-                module = CheckpointBlock(module)
+            if not isinstance(module, ZeROBlock):
+                module = ZeROBlock(module)
             self._modules[str(idx)] = module
 
         self.layer_ids = self.get_range_by_stage_id(self.stage_id)
@@ -358,10 +358,10 @@ class PipelineTransformerBlockList(torch.nn.Module):
     def __len__(self) -> int:
         return len(self._modules)
 
-    def __iter__(self) -> Iterator[CheckpointBlock]:
+    def __iter__(self) -> Iterator[ZeROBlock]:
         return iter(self._modules.values())
 
-    def __getitem__(self, index: Union[int, str]) -> CheckpointBlock:
+    def __getitem__(self, index: Union[int, str]) -> ZeROBlock:
         return self._modules[str(index)]
 
     def forward(self, hidden_state, *args, batch_related=[], return_hidden_states=False):
@@ -473,7 +473,7 @@ class PipelineTransformerBlockList(torch.nn.Module):
 
             if idx in self.layer_ids:
                 with torch.no_grad():
-                    with CheckpointBlockContext(module, pipe=True):
+                    with ZeROContext(module, pipe=True):
                         module._module.state_dict(destination=dst, prefix=name, keep_vars=False)
                 if config["zero_rank"] == 0:
                     if config["rank"] == 0:

@@ -23,7 +23,7 @@ Distributed Parameters and Modules
     :members:
     :show-inheritance:
 
-.. autoclass:: bmtrain.CheckpointBlock
+.. autoclass:: bmtrain.ZeROBlock
     :members:
     :show-inheritance:
 
