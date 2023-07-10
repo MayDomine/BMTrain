@@ -6,6 +6,7 @@ from ..nccl import broadcast as ncclBroadcast
 from ..nccl import send as ncclSend
 from ..nccl import recv as ncclRecv
 from ..nccl import commCount,commRank,NCCLCommunicator
+from ..nccl import reduceScatter as ncclReduceScatter
 DTYPE_LIST = [
     torch.float64,
     torch.float32,
@@ -43,6 +44,31 @@ def recv_meta(prev_rank, comm):
     shape = meta_data[2:n_dims+2].tolist()
     return dtype,shape
 
+
+class OpReduceScatter(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, src, op, comm = None):
+        if comm is None:
+            comm = config["comm"]
+        ctx.comm = comm
+        output_shape = list(src.shape)
+        output_shape[0] //= commCount(comm)
+        outputs = torch.empty(output_shape, dtype = src.dtype, device = src.device)
+        ncclReduceScatter(src.storage(), outputs.storage(), op, comm)
+        return outputs
+    @staticmethod
+    def backward(ctx, grad_output):
+        res = grad_output // commCount(ctx.comm)
+        return res, None, None
+    
+def reduce_scatter(x, op, comm):
+    if not config["initialized"]:
+        raise RuntimeError("BMTrain is not initialized")
+    return OpReduceScatter.apply(x, op, comm)   
+
+
+
+
 class OpBroadcast(torch.autograd.Function):
     @staticmethod
     def forward(ctx, src, root, comm = None):
@@ -60,6 +86,7 @@ def broadcast(src, root, comm=None):
     if not config["initialized"]:
         raise RuntimeError("BMTrain is not initialized")
     return OpBroadcast.apply(src, root, comm)
+
 class OpAllGather(torch.autograd.Function):
     @staticmethod
     def forward(ctx, input : torch.Tensor, comm = None):
