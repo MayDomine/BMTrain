@@ -1,4 +1,5 @@
 import os
+import shutil
 from setuptools.command.build_ext import build_ext
 from setuptools import  setup, find_packages, Extension
 import setuptools
@@ -81,14 +82,11 @@ class CMakeBuild(build_ext):
         build_temp = os.path.join(self.build_temp, ext.name)
         if not os.path.exists(build_temp):
             os.makedirs(build_temp)
-
+        else:
+            shutil.rmtree(build_temp)
         cmake_args += ["-DPython_ROOT_DIR=" + os.path.dirname(os.path.dirname(sys.executable))]
-        try:
-            subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_temp)
-            subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_temp)
-        finally:
-            if os.path.exists(build_temp):
-                shutil.rmtree(build_temp)
+        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_temp)
+        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_temp)
         
 ext_modules = [
     CMakeExtension("bmtrain.C"),
