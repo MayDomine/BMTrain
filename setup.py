@@ -83,8 +83,12 @@ class CMakeBuild(build_ext):
             os.makedirs(build_temp)
 
         cmake_args += ["-DPython_ROOT_DIR=" + os.path.dirname(os.path.dirname(sys.executable))]
-        subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_temp)
-        subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_temp)
+        try:
+            subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=build_temp)
+            subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=build_temp)
+        finally:
+            if os.path.exists(build_temp):
+                shutil.rmtree(build_temp)
         
 ext_modules = [
     CMakeExtension("bmtrain.C"),
